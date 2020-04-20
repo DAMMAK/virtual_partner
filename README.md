@@ -15,4 +15,5 @@ For help getting started with Flutter, view our
 [online documentation](https://flutter.dev/docs), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 
-![Virtual Partner Screen Record](https://github.com/DAMMAK/virtual_partner/blob/master/assets/tik-bot.gif?4&s=400)
+<img src="https://github.com/DAMMAK/virtual_partner/blob/master/assets/tik-bot.gif" width="400" height="790">
+
