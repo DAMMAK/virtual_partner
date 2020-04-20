@@ -1,6 +1,6 @@
 # tikbot
 
-A new Flutter project.
+A simple Chat Bot built with Flutter and dialog flow.
 
 ## Getting Started
 
