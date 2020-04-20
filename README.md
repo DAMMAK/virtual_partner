@@ -14,4 +14,6 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter, view our
 [online documentation](https://flutter.dev/docs), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
-https://github.com/DAMMAK/virtual_partner/blob/master/assets/tik-bot.gif
+![WhatsApp UI redesign](https://github.com/DAMMAK/WhatsAppUI/blob/master/ezgif-2-4d456c238dba.gif)
+
+[Virtual Partner Screen Record](https://github.com/DAMMAK/virtual_partner/blob/master/assets/tik-bot.gif)
