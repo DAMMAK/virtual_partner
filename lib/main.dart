@@ -2,14 +2,36 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_dialogflow/v2/dialogflow_v2.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:loading/indicator/ball_pulse_indicator.dart';
 import 'package:loading/loading.dart';
+import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:tikbot/bot.dart';
+import 'package:tikbot/data/local/user.dart';
+import 'package:tikbot/data/local/user_storage.dart';
+import 'package:tikbot/screens/sign_up_screen.dart';
 
-void main() => runApp(MyApp());
+void main() async {
+  await Hive.initFlutter();
+  WidgetsFlutterBinding.ensureInitialized();
+  final appDocumentDir = await path_provider.getApplicationDocumentsDirectory();
+  Hive.init(appDocumentDir.path);
+  Hive.registerAdapter(UserAdapter(), 0);
+  Widget _defaultHome = ChatApp();
+  final userStorage = await UserStorage.getInstance();
+  if (userStorage.getCurrentUser().name.isEmpty) {
+    _defaultHome = SignUpScreen();
+  }
+  runApp(MyApp(homeWidget: _defaultHome));
+}
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
+  final Widget homeWidget;
+
+  MyApp({this.homeWidget});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -18,7 +40,8 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: ChatApp(),
+      home: homeWidget,
+      routes: {'sign_up': (_) => SignUpScreen(), 'chat': (_) => ChatApp()},
     );
   }
 }
@@ -80,24 +103,20 @@ class _ChatAppState extends State<ChatApp> {
                     ),
                 Container(
                   height: 50,
+                  width: double.infinity,
                   child: Row(children: <Widget>[
-                    Container(
-                        height: 80.0,
-                        decoration: BoxDecoration(
-                            color: Color(0XFF1E1B25),
-                            borderRadius:
-                                BorderRadius.all(Radius.circular(20.0))),
-                        width: width * 0.83,
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 15.0),
+                    Expanded(
+                      child: Container(
+                          height: 80.0,
+                          width: double.infinity,
+                          padding: EdgeInsets.only(left: 15.0, right: 10.0),
+                          decoration: BoxDecoration(color: Color(0XFF1E1B25), borderRadius: BorderRadius.all(Radius.circular(20.0))),
                           child: TextFormField(
-                            style:
-                                TextStyle(color: Colors.white, fontSize: 20.0),
-                            decoration:
-                                InputDecoration(border: InputBorder.none),
+                            style: TextStyle(color: Colors.white, fontSize: 20.0),
+                            decoration: InputDecoration(border: InputBorder.none),
                             controller: _msgController,
-                          ),
-                        )),
+                          )),
+                    ),
                     // RaisedButton(
                     //     onPressed: () {
                     //       chat(_msgController.text);
@@ -140,12 +159,14 @@ class _ChatAppState extends State<ChatApp> {
   chat(String query) async {
     streamController.sink.add({"type": "sender", "message": query});
     Future.delayed(Duration(milliseconds: 500), () {
-      streamController.sink
-          .add({"type": "loader", "message": "TikBot is typing..."});
+      streamController.sink.add({"type": "loader", "message": "TikBot is typing..."});
     });
     AIResponse response = await Bot.sendMessage(query: query);
-    streamController.sink
-        .add({"type": "response", "message": response.getMessage()});
+    if (response != null && response.getMessage() != null) {
+      streamController.sink.add({"type": "response", "message": response.getMessage()});
+    } else {
+      streamController.sink.add({"type": "response", "message": "Didn't quite understand you"});
+    }
   }
 
   Widget _buildBotMessage({message, color}) {
@@ -157,9 +178,7 @@ class _ChatAppState extends State<ChatApp> {
           child: Container(
             width: 200.0,
             padding: EdgeInsets.all(10.0),
-            decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.all(Radius.circular(5.0))),
+            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.all(Radius.circular(5.0))),
             child: Text(
               message["message"],
               style: TextStyle(fontSize: 20.0, color: Colors.white),
@@ -171,10 +190,7 @@ class _ChatAppState extends State<ChatApp> {
           child: Container(
             height: 50,
             width: 50,
-            decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                image: DecorationImage(
-                    image: AssetImage('assets/images/bot.jpg'))),
+            decoration: BoxDecoration(shape: BoxShape.circle, image: DecorationImage(image: AssetImage('assets/images/bot.jpg'))),
           ),
         ),
       ],
@@ -190,9 +206,7 @@ class _ChatAppState extends State<ChatApp> {
           child: Container(
             // width: 100.0,
             padding: EdgeInsets.all(10.0),
-            decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.all(Radius.circular(5.0))),
+            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.all(Radius.circular(5.0))),
             child: Text(
               message["message"],
               style: TextStyle(fontSize: 20.0, color: Colors.white),
@@ -213,8 +227,7 @@ class _ChatAppState extends State<ChatApp> {
     } else {
       return Column(
         children: <Widget>[
-          Loading(
-              indicator: BallPulseIndicator(), size: 20.0, color: Colors.pink),
+          Loading(indicator: BallPulseIndicator(), size: 20.0, color: Colors.pink),
           Text(
             currMessage["message"],
             style: TextStyle(color: Colors.white),
@@ -222,6 +235,12 @@ class _ChatAppState extends State<ChatApp> {
         ],
       );
     }
+  }
+
+  @override
+  void dispose() {
+    streamController.sink.close();
+    super.dispose();
   }
 }
 
